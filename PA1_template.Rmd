@@ -45,6 +45,57 @@ Interval `r stepActivityData[stepActivityData$steps == max(stepActivityData$step
 
 ## Imputing missing values
 
+1. Calculate and report the total number of missing values in the dataset
 
+```{r missingdata, echo=TRUE}
+nrow(activityData[is.na(activityData$steps),])
+```
+
+2. Impute missing data
+3. Create a new data set with missing data
+
+```{r impute, echo=TRUE}
+naValues <- activityData[is.na(activityData$steps), c("date", "interval")]
+for (naDate in unique(naValues$date)){
+    for (naInterval in naValues[naValues$date == naDate, "interval"]){
+        activityData[activityData$date == naDate & activityData$interval == naInterval, "steps"] <- stepActivityData[stepActivityData$interval == naInterval, "steps"]
+    }
+}
+```
+
+4. Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day.
+
+```{r imputedhist, echo=TRUE}
+dailyActivityData <- aggregate(steps ~ date, activityData, sum)
+hist(dailyActivityData$steps, main = "Total Steps Taken Per Day", xlab = "Daily steps")
+mean(dailyActivityData$steps, na.rm = TRUE)
+median(dailyActivityData$steps, na.rm = TRUE)
+```
+Do these values differ from the estimates from the first part of the assignment? 
+Mean? No, as this was the method used for imputation and the only NAs are NA for an entire day so the daily mean remains the same.  Median?  Yes, the median is now equal to the mean.
+
+What is the impact of imputing missing data on the estimates of the total daily number of steps?
+Little impact as the mean remains the same.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r weekendfun, echo=TRUE}
+typeOfDay <- function(x, ...){
+    if (x == "Saturday" | x == "Sunday"){
+        "weekend"
+    } else {
+        "weekday"
+    }
+}
+activityData$typeOfDay <- sapply(sapply(weekdays(strptime(activityData[, "date"], "%Y-%m-%d")), typeOfDay), as.factor)
+stepActivityData <- aggregate(steps ~ interval + typeOfDay, activityData, mean)
+par(fig = c(0, 1, 0.35, 1), new = TRUE)
+plot(stepActivityData[stepActivityData$typeOfDay == "weekday", "interval"], stepActivityData[stepActivityData$typeOfDay == "weekday", "steps"], type = "l", main = "Avg steps at each interval", xlab = "", ylab = "", xaxt = "n", axes = FALSE, col = "blue")
+axis(3, labels = FALSE)
+axis(4)
+box()
+text(1200, 225, "Weekday")
+par(fig = c(0, 1, 0, 0.65), new = TRUE)
+plot(stepActivityData[stepActivityData$typeOfDay == "weekend", "interval"], stepActivityData[stepActivityData$typeOfDay == "weekend", "steps"], type = "l", main = "", xlab = "Interval", ylab = "Avg steps per day", col = "blue")
+text(1200, 165, "Weekend")
+```
